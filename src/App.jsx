@@ -1,0 +1,697 @@
+import { useState } from "react";
+
+const injectFonts = () => {
+  if (document.getElementById("mahee-fonts")) return;
+  const link = document.createElement("link");
+  link.id = "mahee-fonts";
+  link.rel = "stylesheet";
+  link.href = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Outfit:wght@300;400;500;600;700&display=swap";
+  document.head.appendChild(link);
+};
+injectFonts();
+
+const injectStyles = () => {
+  if (document.getElementById("mahee-styles")) return;
+  const style = document.createElement("style");
+  style.id = "mahee-styles";
+  style.textContent = `
+    @keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+    @keyframes shimmer { 0% { background-position:-200% center; } 100% { background-position:200% center; } }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+    .fade-up { animation: fadeUp 0.7s ease both; }
+    .fade-in { animation: fadeIn 0.5s ease both; }
+    .d1{animation-delay:0.1s} .d2{animation-delay:0.25s} .d3{animation-delay:0.4s}
+    .d4{animation-delay:0.55s} .d5{animation-delay:0.7s} .d6{animation-delay:0.85s}
+    .gold-shimmer {
+      background: linear-gradient(90deg,#c9a84c,#f0d080,#c9a84c,#a07830,#c9a84c);
+      background-size:200% auto; -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent; background-clip:text;
+      animation:shimmer 4s linear infinite;
+    }
+    .card-hover { transition:transform 0.3s ease,border-color 0.3s ease,box-shadow 0.3s ease; }
+    .card-hover:hover { transform:translateY(-4px); border-color:#c9a84c55 !important; box-shadow:0 12px 40px rgba(201,168,76,0.08); }
+    .nav-link { position:relative; transition:color 0.2s; }
+    .nav-link::after { content:''; position:absolute; bottom:-2px; left:0; right:0; height:1px; background:#c9a84c; transform:scaleX(0); transition:transform 0.25s ease; }
+    .nav-link:hover::after, .nav-link.active::after { transform:scaleX(1); }
+    .tag { display:inline-block; padding:3px 10px; border-radius:3px; font-size:10px; font-family:'Outfit',sans-serif; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; }
+    ::-webkit-scrollbar { width:4px; }
+    ::-webkit-scrollbar-track { background:#0a0908; }
+    ::-webkit-scrollbar-thumb { background:#c9a84c44; border-radius:2px; }
+    .grain::before { content:''; position:fixed; inset:0; pointer-events:none; z-index:9999; opacity:0.025;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E"); }
+    .tab-btn { background:none; border:none; cursor:pointer; font-family:'Outfit',sans-serif; font-weight:600; font-size:11px; letter-spacing:2px; padding:12px 20px; text-transform:uppercase; transition:color 0.2s; }
+  `;
+  document.head.appendChild(style);
+};
+injectStyles();
+
+const NAV = ["Home", "About", "Work", "Life", "Journey", "Connect"];
+
+const CURRENT_COURSES = [
+  { code: "CSE499B", title: "Senior Design Project II", day: "T", time: "1:00–2:30 PM", faculty: "SnS1", note: "Final project" },
+  { code: "CSE498R", title: "Intern / Co-op / Directed Research", day: "—", time: "Anytime", faculty: "TBA", note: "Research" },
+  { code: "CSE422", title: "Modeling and Simulation", day: "ST", time: "4:20–5:50 PM", faculty: "MSK1", note: "Hardest" },
+  { code: "CSE488", title: "Secure Systems Design & Trusted Computing", day: "MW", time: "4:20–5:50 PM", faculty: "MUO", note: "" },
+  { code: "EEE452", title: "Engineering Economics and Management", day: "RA", time: "2:40–4:10 PM", faculty: "FKr", note: "" },
+  { code: "HIS102", title: "Introduction to World Civilization", day: "ST", time: "2:40–4:10 PM", faculty: "AFRn", note: "" },
+  { code: "PHI104", title: "Introduction to Ethics", day: "MW", time: "2:40–4:10 PM", faculty: "SYN", note: "" },
+];
+
+const PROJECTS = [
+  {
+    id: "aegis", name: "A.E.G.I.S.", full: "Autonomous Emergency Ground Intelligence Swarm",
+    status: "Ongoing", course: "CSE499B — Senior Design", color: "#4a8fa8", icon: "⬡",
+    role: "Built the Warden bot — gas & fire detection with autonomous room sweep",
+    desc: "A trio of autonomous, role-specialised ground robots operating as a fully decentralised swarm for home emergency response. No master bot. No single point of failure. Coordination emerges purely from shared data.",
+    highlights: [
+      "Pathfinder: SLAM mapping with 180° pseudo-LiDAR sweep",
+      "Guardian: AI vision for injury/weapon detection + first aid delivery",
+      "Warden (my bot): MQ-2 gas sensor + thermal fire detection + door-to-door sweep",
+      "ESP-NOW mesh — no router required, true peer-to-peer swarm",
+      "Full 3-bot system under 55,670 BDT using commercial off-the-shelf components",
+    ],
+    tech: ["ESP32-S3 Eye", "ESP-NOW", "SLAM", "TensorFlow Lite", "Python Dashboard", "VL53L0X", "MQ-2"],
+    github: "https://github.com/mbamotria/AEGIS_Warden",
+  },
+  {
+    id: "5g", name: "5G Lateral Guard", full: "Cross-Slice Lateral Movement Detection in 5G Networks",
+    status: "Ongoing", course: "CSE498R — Research", color: "#7a6ea8", icon: "◈",
+    role: "Co-researcher — currently building the dataset generation pipeline",
+    desc: "A GNN-based detection system for an attack vector that existing IDS tools are completely blind to: a threat actor compromising a low-security 5G slice and pivoting into a hospital or financial network.",
+    highlights: [
+      "Attack masquerades as legitimate control-plane signalling — invisible to traditional IDS",
+      "Graph Neural Network: devices as nodes, traffic as edges",
+      "Open5GS + UERANSIM testbed simulates real multi-slice 5G environments",
+      "Currently: building labeled dataset of benign vs adversarial lateral movement",
+      "First open-source testbed specifically for cross-slice security experimentation",
+    ],
+    tech: ["Graph Neural Networks", "Open5GS", "UERANSIM", "Python", "5G NR", "Network Slicing", "PyTorch"],
+    github: "https://github.com/mbamotria",
+  },
+  {
+    id: "ai-desk", name: "AI Desk Assistant", full: "ESP32 Voice Assistant with AI Integration",
+    status: "Completed", course: "CSE299 — Junior Design", color: "#c9a84c", icon: "◎",
+    role: "Lead developer — full hardware + software implementation",
+    desc: "A physical desk device that listens to your voice, thinks with GPT, and talks back — all on a microcontroller. Built to reduce digital distraction: AI access without opening a browser or phone.",
+    highlights: [
+      "I2S microphone → WAV → Deepgram STT → OpenAI GPT → Google TTS → speaker",
+      "FreeRTOS multitasking: recording, transcription, and playback as separate tasks",
+      "OLED displays time, weather, and AI responses with auto-scroll paging",
+      "89% transcription accuracy in quiet environments",
+      "Average response time ~30 seconds end-to-end",
+    ],
+    tech: ["ESP32", "C++", "FreeRTOS", "Deepgram API", "OpenAI API", "I2S", "OLED", "PlatformIO"],
+    github: "https://github.com/mbamotria/AIDeskAssistant",
+  },
+  {
+    id: "zeroway", name: "ZeroWay", full: "Feature-rich SDDM Login Theme for Linux",
+    status: "Completed", course: "Personal Project", color: "#6aa86a", icon: "◇",
+    role: "Solo — QML frontend + shell installer",
+    desc: "A polished open-source SDDM greeter theme with adaptive scaling, keyboard-first UX, ambient motion, and 40+ configuration options. Ships with a one-command Makefile installer.",
+    highlights: [
+      "Adaptive layout scaling for any resolution or aspect ratio",
+      "Ambient motion background — configurable opacity and speed",
+      "Spotlight focus glow, keyboard shortcuts, on-screen keyboard",
+      "Monogram fallback avatars with stable accent color palette",
+      "Full CHANGELOG, CONTRIBUTING.md, MIT license — production-quality open source",
+    ],
+    tech: ["QML", "Shell", "Makefile", "SDDM", "Arch Linux", "Hyprland"],
+    github: "https://github.com/mbamotria/ZeroWay",
+  },
+];
+
+const OTHER_REPOS = [
+  { name: "ObstacleAvoidanceRobot", desc: "ESP32 + HC-SR04 reactive robot with median filtering. 91% success rate. Academic paper written.", color: "#4a8fa8", github: "https://github.com/mbamotria/ObstacleAvoidanceRobot" },
+  { name: "ShareStuffs", desc: "Full-stack platform where people can share items and others can borrow them.", color: "#7a6ea8", github: "https://github.com/sakibulla/ShareStuffs_Client" },
+  { name: "NewsletterHub", desc: "Most polished web project — HTML, CSS, PHP, MySQL. Clean, complete, production-ready.", color: "#c9a84c", github: "https://github.com/mbamotria/NewsletterHub" },
+  { name: "MotriasLinuxRice", desc: "Arch Linux dotfiles — Hyprland, KDE, GNOME. Because an OS should look like art.", color: "#6aa86a", github: "https://github.com/mbamotria/MotriasLinuxRice" },
+  { name: "GameCollection", desc: "Java game collection with AI-assisted animations. Best Java project I've written.", color: "#a86a4a", github: "https://github.com/mbamotria/GameCollection" },
+  { name: "ModernSuperShop", desc: "E-commerce web application.", color: "#888", github: "https://github.com/mbamotria/ModernSuperShop" },
+];
+
+const PAPERS = [
+  {
+    id: "scam", title: "Audio Scam Detection using Cross-Modal Knowledge Distillation, Meta-Learning, and Attention-Based Segment Scoring for Edge Deployment",
+    course: "CSE465 — Neural Networks", status: "Unpublished", color: "#c85a5a",
+    desc: "Detects phone scam calls using only one side of the conversation — a gap no existing system addresses. Runs on edge devices.",
+    contributions: ["Cross-modal KD: GPT-4o teacher → Gemma-3n student model via LoRA", "Meta-learning with Prototypical Networks for few-shot adaptation to new scam types", "Attention-based segment scoring for early alerts and explainability (LIME)"],
+    results: [{ label: "Best Model", val: "Gemma-3n" }, { label: "Accuracy", val: "88.2%" }, { label: "F1 Score", val: "89.07%" }, { label: "Dataset", val: "TeleAntiFraud-28k" }],
+  },
+  {
+    id: "purchase", title: "Predicting Customer Purchase Behavior for Targeted Cross-Selling Using Supervised Learning",
+    course: "Machine Learning Project", status: "Unpublished", color: "#7a6ea8",
+    desc: "Supervised learning framework for cross-selling recommendations. Wide & Deep beats all classical approaches on 784k transactions.",
+    contributions: ["Transaction-pair classification with fine-grained temporal feature engineering", "SMOTE-based class balancing for rare co-purchase events", "Wide & Deep hybrid: memorization + generalization combined"],
+    results: [{ label: "Best Model", val: "Wide & Deep" }, { label: "Accuracy", val: "81%" }, { label: "F1 Score", val: "83%" }, { label: "AUC", val: "88.62%" }],
+  },
+  {
+    id: "robot", title: "An Autonomous Obstacle Avoidance Car",
+    course: "Solo Research Paper", status: "Unpublished", color: "#4a8fa8",
+    desc: "Reactive obstacle avoidance robot using ESP32 and ultrasonic sensing with median filtering for noise reduction.",
+    contributions: ["Median filtering over 15 samples for reliable indoor detection", "Differential-drive reactive algorithm: stop / reverse / turn logic", "30 trials across single, double obstacle and narrow corridor scenarios"],
+    results: [{ label: "Best Success", val: "91%" }, { label: "Reaction Time", val: "220–260ms" }, { label: "Platform", val: "ESP32" }, { label: "Trials", val: "30" }],
+  },
+  {
+    id: "aideskpaper", title: "AI Desk Assistant — ESP32 Voice Assistant with AI Integration",
+    course: "CSE299 — Junior Design", status: "Submitted to faculty", color: "#c9a84c",
+    desc: "Hardware-software system combining voice recording, AI, and TTS on a microcontroller to create a distraction-free AI interface for students.",
+    contributions: ["FreeRTOS multitasking architecture for concurrent recording/transcription/playback", "Double buffering for SD card write optimization under memory constraints", "Deepgram + OpenAI + Google TTS pipeline on a single low-cost microcontroller"],
+    results: [{ label: "Transcription", val: "89%" }, { label: "Response Time", val: "~30s" }, { label: "Platform", val: "ESP32" }, { label: "Grade", val: "A" }],
+  },
+];
+
+const LIFE_CARDS = [
+  {
+    icon: "♪", title: "Music", color: "#c9a84c",
+    items: [{ l: "Mr. Kitty", s: "synthwave / dark electronic" }, { l: "Skillet", s: "alternative rock" }, { l: "Aftermath", s: "Bangla rock" }, { l: "Anime OSTs", s: "always, forever" }],
+    note: "Music runs during every workout, every commute, every late-night cook session.",
+    link: { label: "SPOTIFY →", href: "https://open.spotify.com/user/31z4vpugeplruvel67xyf4icct6i?si=0912baeea6bb4f5d" }
+  },
+  {
+    icon: "◉", title: "Gaming", color: "#7a6ea8",
+    items: [{ l: "Strinova", s: "main — tactical shooter" }, { l: "Genshin Impact", s: "open world RPG" }],
+    note: "Gaming channel: Motria. Strinova hits deeper.",
+    link: { label: "YOUTUBE →", href: "https://www.youtube.com/@motria0" }
+  },
+  {
+    icon: "▦", title: "Reading", color: "#4a8fa8",
+    items: [{ l: "Crime and Punishment", s: "Dostoevsky — the one that hit different" }, { l: "Always something next", s: "20 min before sleep, every night" }],
+    note: "Reading is the last thing before sleep. Non-negotiable.",
+    link: { label: "GOODREADS →", href: "https://www.goodreads.com/user/show/169165256-mohammed-bin-ahmed" }
+  },
+  {
+    icon: "◎", title: "Anime", color: "#a86a4a",
+    items: [{ l: "MyAnimeList", s: "full list — 0Motria" }, { l: "Obsessed with openings", s: "they hit differently than the show" }],
+    note: "Ask me for a recommendation. I will not disappoint.",
+    link: { label: "MYANIMELIST →", href: "https://myanimelist.net/profile/0Motria" }
+  },
+  {
+    icon: "⬡", title: "Photography", color: "#6aa86a",
+    items: [{ l: "motriasclicks.netlify.app", s: "live portfolio" }, { l: "Street & candid", s: "the genre that feels most honest" }],
+    note: "Seeing the world through a lens changes how you look at it without one.",
+    link: { label: "VISIT GALLERY →", href: "https://motriasclicks.netlify.app" }
+  },
+  {
+    icon: "◇", title: "Cooking", color: "#c9a84c",
+    items: [{ l: "Homemade Shawarma", s: "the signature" }, { l: "Potato Curry", s: "the one I'm most proud of" }, { l: "Chinese stir fry", s: "carrot, borboti, chicken" }],
+    note: "Cooking is meditation. Music on, phone away.", link: null
+  },
+];
+
+const ACADEMICS = [
+  { sem: "Fall 2022", gpa: 3.31, highlight: null },
+  { sem: "Spring 2023", gpa: 3.06, highlight: null },
+  { sem: "Summer 2023", gpa: 3.26, highlight: null },
+  { sem: "Intersession", gpa: 3.85, highlight: "Peak" },
+  { sem: "Spring 2024", gpa: 3.35, highlight: null },
+  { sem: "Summer 2024", gpa: 3.52, highlight: null },
+  { sem: "Spring 2025", gpa: 3.37, highlight: null },
+  { sem: "Summer 2025", gpa: 3.40, highlight: null },
+  { sem: "Fall 2025", gpa: 2.72, highlight: "Hardest" },
+  { sem: "Spring 2026", gpa: 3.19, highlight: null },
+];
+
+const SKILLS = [
+  { g: "Networking & Security", items: ["5G / Network Slicing", "IoT Protocols", "Cybersecurity", "Data Communication", "TCP/IP", "Intrusion Detection"] },
+  { g: "Programming", items: ["Python", "C / C++", "Java", "SQL", "JavaScript", "QML"] },
+  { g: "AI / ML", items: ["Graph Neural Networks", "Knowledge Distillation", "Meta-Learning", "TensorFlow Lite", "XGBoost", "Wide & Deep"] },
+  { g: "Systems & Hardware", items: ["Embedded Systems", "ESP32 / ESP32-S3", "FreeRTOS", "SLAM", "Computer Architecture", "Operating Systems"] },
+  { g: "Linux", items: ["Arch Linux", "Hyprland", "KDE", "GNOME", "Shell Scripting", "System Ricing"] },
+];
+
+const CONNECT_LINKS = [
+  { label: "Email", icon: "✉", color: "#ea4335", desc: "mohammedbinahmed007", href: "mailto:mohammedbinahmed007@gmail.com" },
+  { label: "LinkedIn", icon: "in", color: "#0a66c2", desc: "Mohammed Bin Ahmed", href: "https://linkedin.com/in/mohammed-bin-ahmed-596861255" },
+  { label: "GitHub", icon: "◆", color: "#e6edf3", desc: "github.com/mbamotria", href: "https://github.com/mbamotria/" },
+  { label: "Facebook", icon: "f", color: "#1877f2", desc: "Mohammed Bin Ahmed", href: "https://www.facebook.com/mohammed.bin.ahmed.mahee/" },
+  { label: "Photography", icon: "⬡", color: "#6aa86a", desc: "motriasclicks.netlify.app", href: "https://motriasclicks.netlify.app" },
+  { label: "MyAnimeList", icon: "▦", color: "#2e51a2", desc: "0Motria", href: "https://myanimelist.net/profile/0Motria" },
+  { label: "Spotify", icon: "♪", color: "#1db954", desc: "What I'm listening to", href: "https://open.spotify.com/user/31z4vpugeplruvel67xyf4icct6i?si=0912baeea6bb4f5d" },
+  { label: "YouTube", icon: "▶", color: "#ff4444", desc: "Gaming — @motria0", href: "https://www.youtube.com/@motria0" },
+  { label: "Goodreads", icon: "◇", color: "#c9a84c", desc: "Reading list", href: "https://www.goodreads.com/user/show/169165256-mohammed-bin-ahmed" },
+];
+
+const DAY_MAP = { S: "Sun", T: "Tue", M: "Mon", W: "Wed", R: "Thu", A: "Sat" };
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+const Gold = ({ children }) => <span className="gold-shimmer">{children}</span>;
+
+const Divider = () => (
+  <div style={{ display: "flex", alignItems: "center", gap: 16, margin: "48px 0 40px" }}>
+    <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg,transparent,#c9a84c33)" }} />
+    <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#c9a84c", opacity: 0.6 }} />
+    <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg,#c9a84c33,transparent)" }} />
+  </div>
+);
+
+const SLabel = ({ children }) => (
+  <div style={{ fontSize: 10, letterSpacing: 4, color: "#c9a84c", fontFamily: "'Outfit',sans-serif", fontWeight: 600, textTransform: "uppercase", marginBottom: 6 }}>{children}</div>
+);
+const STitle = ({ children }) => (
+  <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(32px,6vw,52px)", fontWeight: 600, letterSpacing: 1, color: "#f0ece0", margin: "0 0 32px", lineHeight: 1.1 }}>{children}</h2>
+);
+const Card = ({ children, style = {}, className = "" }) => (
+  <div className={className} style={{ background: "#111008", border: "1px solid #c9a84c22", borderRadius: 8, padding: "24px", ...style }}>{children}</div>
+);
+
+// ── MAIN ──────────────────────────────────────────────────────────────────────
+export default function MaheePortfolio() {
+  const [nav, setNav] = useState("Home");
+  const [workTab, setWorkTab] = useState("projects");
+  const [expandedProject, setExpandedProject] = useState(null);
+  const [expandedPaper, setExpandedPaper] = useState(null);
+  const [journeyTab, setJourneyTab] = useState("academics");
+
+  const pages = {
+    Home: <HomePage setNav={setNav} />,
+    About: <AboutPage />,
+    Work: <WorkPage workTab={workTab} setWorkTab={setWorkTab} expandedProject={expandedProject} setExpandedProject={setExpandedProject} expandedPaper={expandedPaper} setExpandedPaper={setExpandedPaper} />,
+    Life: <LifePage />,
+    Journey: <JourneyPage journeyTab={journeyTab} setJourneyTab={setJourneyTab} />,
+    Connect: <ConnectPage />,
+  };
+
+  return (
+    <div className="grain" style={{ minHeight: "100vh", background: "#0a0908", color: "#e8e0cc", fontFamily: "'Outfit',sans-serif", overflowX: "hidden" }}>
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse at 20% 10%,rgba(201,168,76,0.04) 0%,transparent 50%),radial-gradient(ellipse at 80% 90%,rgba(122,110,168,0.04) 0%,transparent 50%)" }} />
+      <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(10,9,8,0.92)", backdropFilter: "blur(20px)", borderBottom: "1px solid #c9a84c18", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56 }}>
+        <button onClick={() => setNav("Home")} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "'Cormorant Garamond',serif", fontSize: 20, fontWeight: 700, letterSpacing: 2, color: "#c9a84c" }}>M·A·H·E·E</button>
+        <div style={{ display: "flex", gap: 4 }}>
+          {NAV.map(item => (
+            <button key={item} onClick={() => setNav(item)} className={`nav-link ${nav === item ? "active" : ""}`}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, fontFamily: "'Outfit',sans-serif", fontWeight: 500, letterSpacing: 1.5, padding: "6px 10px", color: nav === item ? "#c9a84c" : "#888", transition: "color 0.2s" }}>
+              {item.toUpperCase()}
+            </button>
+          ))}
+        </div>
+      </nav>
+      <div style={{ position: "relative", zIndex: 1 }}>{pages[nav]}</div>
+    </div>
+  );
+}
+
+// ── HOME ──────────────────────────────────────────────────────────────────────
+function HomePage({ setNav }) {
+  return (
+    <div style={{ minHeight: "calc(100vh - 56px)", display: "flex", flexDirection: "column", justifyContent: "center", padding: "60px 40px", maxWidth: 1000, margin: "0 auto" }}>
+      <div className="fade-in d1" style={{ marginBottom: 32 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ height: 1, width: 48, background: "#c9a84c44" }} />
+          <span style={{ fontSize: 10, letterSpacing: 4, color: "#c9a84c88", fontFamily: "'Outfit',sans-serif", fontWeight: 600 }}>DHAKA, BANGLADESH</span>
+        </div>
+      </div>
+      <div className="fade-up d1"><SLabel>Mohammed Bin Ahmed</SLabel></div>
+      <h1 className="fade-up d2" style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(52px,10vw,100px)", fontWeight: 300, letterSpacing: -1, lineHeight: 0.95, margin: "12px 0 0", color: "#f0ece0" }}>
+        Built from<br /><Gold>curiosity.</Gold><br />
+        <span style={{ fontStyle: "italic", color: "#c8b898" }}>Ruled by heart.</span>
+      </h1>
+      <p className="fade-up d3" style={{ maxWidth: 500, fontSize: 15, color: "#888", lineHeight: 1.9, margin: "32px 0 0", fontWeight: 300 }}>
+        Final year CSE at North South University. IoT & Cybersecurity. Builder of swarm robots, 5G security systems, and Linux login screens. Endlessly curious, annoyingly good at things he barely shows up for.
+      </p>
+      <div className="fade-up d4" style={{ display: "flex", gap: 16, marginTop: 40, flexWrap: "wrap" }}>
+        <button onClick={() => setNav("Work")} style={{ padding: "12px 28px", borderRadius: 2, fontSize: 12, fontWeight: 600, letterSpacing: 2, cursor: "pointer", fontFamily: "'Outfit',sans-serif", background: "#c9a84c", color: "#0a0908", border: "none" }}>View Work</button>
+        <a href="https://motriasclicks.netlify.app" target="_blank" rel="noopener noreferrer" style={{ padding: "12px 28px", borderRadius: 2, fontSize: 12, fontWeight: 600, letterSpacing: 2, textDecoration: "none", border: "1px solid #c9a84c44", color: "#c9a84c", fontFamily: "'Outfit',sans-serif" }}>Photography →</a>
+      </div>
+      <div className="fade-up d5" style={{ display: "flex", gap: 12, marginTop: 48, flexWrap: "wrap" }}>
+        {[{ dot: "#6aa86a", text: "Final Semester — NSU BSCSE Summer 2026" }, { dot: "#c9a84c", text: "90-Day Transformation — Active" }, { dot: "#7a6ea8", text: "2 Projects Ongoing" }].map(b => (
+          <div key={b.text} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: "#666", fontWeight: 500 }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: b.dot, animation: "pulse 2s ease-in-out infinite" }} />
+            {b.text}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── ABOUT ─────────────────────────────────────────────────────────────────────
+function AboutPage() {
+  return (
+    <div style={{ maxWidth: 860, margin: "0 auto", padding: "64px 32px" }}>
+      <div className="fade-up d1"><SLabel>About</SLabel><STitle>Who is Mahee?</STitle></div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+        <Card className="fade-up d2 card-hover" style={{ borderLeft: "2px solid #c9a84c" }}>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 600, marginBottom: 12, color: "#f0ece0" }}>The Person</div>
+          <p style={{ fontSize: 13, color: "#999", lineHeight: 1.9, margin: 0 }}>
+            I'm Mohammed Bin Ahmed — people call me <Gold>Mahee</Gold>. Final year CSE at North South University, Dhaka. IoT, Networking, and Cybersecurity. Genuinely curious about everything — not as a personality trait, as a way of life. I read Dostoevsky, cook shawarma from scratch, photograph streets, and stay up thinking about how systems work.
+          </p>
+        </Card>
+        <Card className="fade-up d3 card-hover" style={{ borderLeft: "2px solid #7a6ea8" }}>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 600, marginBottom: 12, color: "#f0ece0" }}>The Real One</div>
+          <p style={{ fontSize: 13, color: "#999", lineHeight: 1.9, margin: 0 }}>
+            My friends would say: happy, funny, always building something — and also somehow perpetually napping and skipping class. What surprises people: <Gold>I show up where it counts.</Gold> Written papers, built robots, maintained a 3.25 CGPA while attending roughly half my lectures. Figure that one out.
+          </p>
+        </Card>
+      </div>
+
+      <Card className="fade-up d4 card-hover" style={{ marginBottom: 16 }}>
+        <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 600, marginBottom: 20, color: "#f0ece0" }}>Skills & Expertise</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 20 }}>
+          {SKILLS.map(s => (
+            <div key={s.g}>
+              <div style={{ fontSize: 10, color: "#c9a84c", letterSpacing: 2, fontWeight: 600, marginBottom: 10 }}>{s.g.toUpperCase()}</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {s.items.map(item => <span key={item} className="tag" style={{ background: "#1e1c14", color: "#aaa", border: "1px solid #333" }}>{item}</span>)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 16 }}>
+        {[{ n: "131.5+", l: "Credits" }, { n: "3.25", l: "CGPA" }, { n: "4", l: "Papers" }, { n: "1", l: "AWS Cert" }].map(s => (
+          <Card key={s.l} className="card-hover" style={{ textAlign: "center", padding: "20px 12px" }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 36, fontWeight: 600, color: "#c9a84c", lineHeight: 1 }}>{s.n}</div>
+            <div style={{ fontSize: 11, color: "#666", marginTop: 8, letterSpacing: 1 }}>{s.l}</div>
+          </Card>
+        ))}
+      </div>
+
+      <Card className="fade-up d5" style={{ background: "linear-gradient(135deg,#1a1508,#0e0c08)", border: "1px solid #c9a84c33" }}>
+        <div style={{ fontSize: 10, color: "#c9a84c", letterSpacing: 3, fontWeight: 600, marginBottom: 12 }}>CERTIFICATION</div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, fontWeight: 600, color: "#f0ece0" }}>AWS Cloud Foundations</div>
+            <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>AWS Academy · North South University · 2024</div>
+          </div>
+          <span className="tag" style={{ background: "#FF990022", color: "#FF9900", border: "1px solid #FF990044" }}>Completed</span>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+// ── WORK ──────────────────────────────────────────────────────────────────────
+function WorkPage({ workTab, setWorkTab, expandedProject, setExpandedProject, expandedPaper, setExpandedPaper }) {
+  return (
+    <div style={{ maxWidth: 860, margin: "0 auto", padding: "64px 32px" }}>
+      <div className="fade-up d1"><SLabel>Work</SLabel><STitle>Projects & Papers</STitle></div>
+      <div style={{ display: "flex", gap: 0, marginBottom: 32, borderBottom: "1px solid #1e1c14" }}>
+        {["projects", "papers", "repos"].map(tab => (
+          <button key={tab} className="tab-btn" onClick={() => setWorkTab(tab)}
+            style={{ color: workTab === tab ? "#c9a84c" : "#555", borderBottom: workTab === tab ? "2px solid #c9a84c" : "2px solid transparent" }}>
+            {tab.toUpperCase()}
+          </button>
+        ))}
+      </div>
+
+      {workTab === "projects" && (
+        <div className="fade-in">
+          {PROJECTS.map((p, i) => (
+            <div key={p.id} className={`fade-up card-hover d${i + 2}`}
+              onClick={() => setExpandedProject(expandedProject === p.id ? null : p.id)}
+              style={{ background: "#111008", border: `1px solid ${expandedProject === p.id ? p.color + "55" : "#c9a84c22"}`, borderRadius: 8, marginBottom: 16, cursor: "pointer", overflow: "hidden", transition: "all 0.3s" }}>
+              <div style={{ padding: "24px 24px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 20, color: p.color }}>{p.icon}</span>
+                    <span className="tag" style={{ background: p.color + "22", color: p.color, border: `1px solid ${p.color}44` }}>{p.status}</span>
+                    <span className="tag" style={{ background: "#1e1c14", color: "#888", border: "1px solid #333" }}>{p.course}</span>
+                  </div>
+                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 600, color: "#f0ece0", marginBottom: 2, lineHeight: 1.2 }}>{p.name}</div>
+                  <div style={{ fontSize: 12, color: "#666", marginBottom: 8, fontStyle: "italic" }}>{p.full}</div>
+                  <div style={{ fontSize: 12, color: p.color, marginBottom: 10 }}>↳ {p.role}</div>
+                  <p style={{ fontSize: 13, color: "#999", lineHeight: 1.8, margin: 0 }}>{p.desc}</p>
+                </div>
+                <span style={{ color: "#c9a84c", fontSize: 16, flexShrink: 0, marginTop: 4 }}>{expandedProject === p.id ? "▲" : "▼"}</span>
+              </div>
+              {expandedProject === p.id && (
+                <div style={{ padding: "0 24px 24px", borderTop: "1px solid #1e1c14" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginTop: 20 }}>
+                    <div>
+                      <div style={{ fontSize: 10, color: p.color, letterSpacing: 2, fontWeight: 600, marginBottom: 10 }}>KEY HIGHLIGHTS</div>
+                      {p.highlights.map((h, j) => (
+                        <div key={j} style={{ display: "flex", gap: 10, fontSize: 13, color: "#bbb", marginBottom: 7, alignItems: "flex-start", lineHeight: 1.6 }}>
+                          <span style={{ color: p.color, flexShrink: 0 }}>→</span>{h}
+                        </div>
+                      ))}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, color: p.color, letterSpacing: 2, fontWeight: 600, marginBottom: 10 }}>TECH STACK</div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 16 }}>
+                        {p.tech.map(t => <span key={t} className="tag" style={{ background: p.color + "15", color: p.color, border: `1px solid ${p.color}33` }}>{t}</span>)}
+                      </div>
+                      <a href={p.github} target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize: 11, color: p.color, letterSpacing: 2, fontWeight: 600, textDecoration: "none" }}
+                        onClick={e => e.stopPropagation()}>VIEW ON GITHUB →</a>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {workTab === "papers" && (
+        <div className="fade-in">
+          <p style={{ fontSize: 13, color: "#888", lineHeight: 1.8, marginBottom: 24, borderLeft: "2px solid #c9a84c44", paddingLeft: 16 }}>
+            Four papers across different courses. None published — written for faculty, learning, and the craft. The work is real regardless.
+          </p>
+          {PAPERS.map((p) => (
+            <div key={p.id} className="fade-up card-hover"
+              onClick={() => setExpandedPaper(expandedPaper === p.id ? null : p.id)}
+              style={{ background: "#111008", border: `1px solid ${expandedPaper === p.id ? p.color + "55" : "#c9a84c22"}`, borderRadius: 8, marginBottom: 14, cursor: "pointer", overflow: "hidden", transition: "all 0.3s" }}>
+              <div style={{ padding: "20px 22px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+                    <span className="tag" style={{ background: p.color + "22", color: p.color, border: `1px solid ${p.color}44` }}>{p.status}</span>
+                    <span className="tag" style={{ background: "#1e1c14", color: "#888", border: "1px solid #333" }}>{p.course}</span>
+                  </div>
+                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontWeight: 600, color: "#f0ece0", lineHeight: 1.4, marginBottom: 8 }}>{p.title}</div>
+                  <p style={{ fontSize: 12, color: "#999", lineHeight: 1.7, margin: 0 }}>{p.desc}</p>
+                </div>
+                <span style={{ color: "#c9a84c", fontSize: 14, flexShrink: 0, marginTop: 4 }}>{expandedPaper === p.id ? "▲" : "▼"}</span>
+              </div>
+              {expandedPaper === p.id && (
+                <div style={{ padding: "0 22px 22px", borderTop: "1px solid #1e1c14" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginTop: 18 }}>
+                    <div>
+                      <div style={{ fontSize: 10, color: p.color, letterSpacing: 2, fontWeight: 600, marginBottom: 10 }}>CONTRIBUTIONS</div>
+                      {p.contributions.map((c, j) => (
+                        <div key={j} style={{ display: "flex", gap: 8, fontSize: 12, color: "#bbb", marginBottom: 7, alignItems: "flex-start", lineHeight: 1.6 }}>
+                          <span style={{ color: p.color, flexShrink: 0 }}>→</span>{c}
+                        </div>
+                      ))}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, color: p.color, letterSpacing: 2, fontWeight: 600, marginBottom: 10 }}>RESULTS</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                        {p.results.map(r => (
+                          <div key={r.label} style={{ background: "#1e1c14", borderRadius: 6, padding: "10px 12px" }}>
+                            <div style={{ fontSize: 10, color: "#888", letterSpacing: 1 }}>{r.label}</div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: p.color, marginTop: 3 }}>{r.val}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {workTab === "repos" && (
+        <div className="fade-in">
+          <p style={{ fontSize: 13, color: "#888", lineHeight: 1.8, marginBottom: 24, borderLeft: "2px solid #c9a84c44", paddingLeft: 16 }}>
+            Everything else on GitHub — coursework, experiments, and a few things built purely for the love of it.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            {OTHER_REPOS.map(r => (
+              <a key={r.name} href={r.github} target="_blank" rel="noopener noreferrer" className="card-hover"
+                style={{ background: "#111008", border: `1px solid ${r.color}22`, borderRadius: 8, padding: "20px", textDecoration: "none", display: "block", borderTop: `2px solid ${r.color}` }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#f0ece0", marginBottom: 8 }}>{r.name}</div>
+                <div style={{ fontSize: 12, color: "#888", lineHeight: 1.7 }}>{r.desc}</div>
+                <div style={{ fontSize: 10, color: r.color, letterSpacing: 1.5, fontWeight: 600, marginTop: 12 }}>GITHUB →</div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── LIFE ──────────────────────────────────────────────────────────────────────
+function LifePage() {
+  return (
+    <div style={{ maxWidth: 860, margin: "0 auto", padding: "64px 32px" }}>
+      <div className="fade-up d1"><SLabel>Beyond the Code</SLabel><STitle>Life</STitle></div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        {LIFE_CARDS.map((s, i) => (
+          <div key={s.title} className={`fade-up card-hover d${Math.min(i + 2, 6)}`}
+            style={{ background: "#111008", border: `1px solid ${s.color}22`, borderRadius: 8, padding: "22px", borderTop: `2px solid ${s.color}` }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 14 }}>
+              <span style={{ color: s.color, fontSize: 20 }}>{s.icon}</span>
+              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, fontWeight: 600, color: "#f0ece0" }}>{s.title}</div>
+            </div>
+            {s.items.map((item, j) => (
+              <div key={j} style={{ marginBottom: 7 }}>
+                <div style={{ fontSize: 13, color: "#ccc", fontWeight: 500 }}>{item.l}</div>
+                <div style={{ fontSize: 11, color: "#666", marginTop: 1 }}>{item.s}</div>
+              </div>
+            ))}
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #1e1c14", fontSize: 12, color: "#777", lineHeight: 1.7, fontStyle: "italic" }}>{s.note}</div>
+            {s.link && (
+              <a href={s.link.href} target="_blank" rel="noopener noreferrer"
+                style={{ display: "inline-block", marginTop: 10, fontSize: 10, color: s.color, letterSpacing: 2, fontWeight: 600, textDecoration: "none" }}>
+                {s.link.label}
+              </a>
+            )}
+          </div>
+        ))}
+      </div>
+      <Divider />
+      <div className="fade-up" style={{ background: "linear-gradient(135deg,#111008,#0e0c08)", border: "1px solid #c9a84c44", borderRadius: 8, padding: "32px", textAlign: "center" }}>
+        <div style={{ fontSize: 10, color: "#c9a84c", letterSpacing: 4, fontWeight: 600, marginBottom: 12 }}>COMING SOON</div>
+        <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 600, color: "#f0ece0", marginBottom: 10 }}>A Teaching Channel</div>
+        <p style={{ fontSize: 13, color: "#888", lineHeight: 1.8, maxWidth: 480, margin: "0 auto" }}>
+          Networking concepts explained clearly. Fun facts collected from years of curiosity. The things I wish someone had taught me earlier — delivered the way I'd want to receive them.
+          <br /><span style={{ color: "#c9a84c55", fontStyle: "italic" }}>Name TBD. Watch this space.</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── JOURNEY ───────────────────────────────────────────────────────────────────
+function JourneyPage({ journeyTab, setJourneyTab }) {
+  return (
+    <div style={{ maxWidth: 860, margin: "0 auto", padding: "64px 32px" }}>
+      <div className="fade-up d1"><SLabel>Ongoing</SLabel><STitle>The Journey</STitle></div>
+      <div style={{ display: "flex", gap: 0, marginBottom: 32, borderBottom: "1px solid #1e1c14" }}>
+        {["academics", "transformation"].map(tab => (
+          <button key={tab} className="tab-btn" onClick={() => setJourneyTab(tab)}
+            style={{ color: journeyTab === tab ? "#c9a84c" : "#555", borderBottom: journeyTab === tab ? "2px solid #c9a84c" : "2px solid transparent" }}>
+            {tab.toUpperCase()}
+          </button>
+        ))}
+      </div>
+
+      {journeyTab === "academics" && (
+        <div className="fade-in">
+          {/* Current semester */}
+          <Card style={{ background: "linear-gradient(135deg,#1a1508,#0e0c08)", border: "1px solid #c9a84c44", marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
+              <div>
+                <div style={{ fontSize: 10, color: "#c9a84c", letterSpacing: 3, fontWeight: 600, marginBottom: 4 }}>CURRENT SEMESTER</div>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 600, color: "#f0ece0" }}>Summer 2026 — Final</div>
+              </div>
+              <span className="tag" style={{ background: "#6aa86a22", color: "#6aa86a", border: "1px solid #6aa86a44" }}>In Progress</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {CURRENT_COURSES.map(c => (
+                <div key={c.code} style={{ display: "flex", alignItems: "center", gap: 12, background: "#111008", borderRadius: 6, padding: "10px 14px", flexWrap: "wrap" }}>
+                  <span className="tag" style={{ background: c.note === "Hardest" ? "#c85a5a22" : c.note === "Final project" || c.note === "Research" ? "#c9a84c22" : "#1e1c14", color: c.note === "Hardest" ? "#c85a5a" : c.note === "Final project" || c.note === "Research" ? "#c9a84c" : "#888", border: `1px solid ${c.note === "Hardest" ? "#c85a5a33" : c.note === "Final project" || c.note === "Research" ? "#c9a84c33" : "#333"}`, minWidth: 64, textAlign: "center" }}>{c.code}</span>
+                  <div style={{ flex: 1, minWidth: 160 }}>
+                    <div style={{ fontSize: 13, color: "#ccc", fontWeight: 500 }}>{c.title}</div>
+                    <div style={{ fontSize: 11, color: "#666", marginTop: 1 }}>{c.day !== "—" ? `${c.day} · ${c.time}` : c.time} · {c.faculty}</div>
+                  </div>
+                  {c.note && <span style={{ fontSize: 10, color: c.note === "Hardest" ? "#c85a5a" : "#c9a84c88", fontWeight: 600, letterSpacing: 1 }}>{c.note.toUpperCase()}</span>}
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Stats */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
+            {[{ n: "3.25", l: "CGPA", c: "#c9a84c" }, { n: "131.5+", l: "Credits", c: "#f0ece0" }, { n: "Final", l: "Semester", c: "#6aa86a" }].map(s => (
+              <Card key={s.l} style={{ textAlign: "center" }}>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 34, fontWeight: 600, color: s.c, lineHeight: 1 }}>{s.n}</div>
+                <div style={{ fontSize: 11, color: "#666", marginTop: 8, letterSpacing: 1 }}>{s.l}</div>
+              </Card>
+            ))}
+          </div>
+
+          {/* GPA chart */}
+          {ACADEMICS.map((s, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "13px 0", borderBottom: "1px solid #1a1814" }}>
+              <div style={{ minWidth: 110, fontSize: 12, color: "#888" }}>{s.sem}</div>
+              <div style={{ flex: 1, background: "#1e1c14", borderRadius: 2, height: 5, overflow: "hidden" }}>
+                <div style={{ height: "100%", borderRadius: 2, width: `${(s.gpa / 4) * 100}%`, background: s.gpa >= 3.5 ? "#6aa86a" : s.gpa >= 3.0 ? "#c9a84c" : "#c85a5a", transition: "width 0.6s ease" }} />
+              </div>
+              <div style={{ minWidth: 36, fontSize: 13, fontWeight: 600, color: s.gpa >= 3.5 ? "#6aa86a" : s.gpa >= 3.0 ? "#c9a84c" : "#c85a5a" }}>{s.gpa}</div>
+              {s.highlight && <span className="tag" style={{ background: "#1e1c14", color: "#888", border: "1px solid #333" }}>{s.highlight}</span>}
+            </div>
+          ))}
+          <div style={{ marginTop: 18, fontSize: 12, color: "#666", lineHeight: 1.8, fontStyle: "italic", borderLeft: "2px solid #c9a84c44", paddingLeft: 16 }}>
+            Not a perfect record — a real one. Physics twice. A D in Engineering Economics. A tough Fall 2025. Still here, still building. The best semester (3.85) came right after the grind. That's the pattern.
+          </div>
+        </div>
+      )}
+
+      {journeyTab === "transformation" && (
+        <div className="fade-in">
+          <Card style={{ background: "linear-gradient(135deg,#1a1508,#0e0c08)", border: "1px solid #c9a84c44", marginBottom: 20 }}>
+            <div style={{ fontSize: 10, color: "#c9a84c", letterSpacing: 4, fontWeight: 600, marginBottom: 12 }}>THE PROJECT</div>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 600, color: "#f0ece0", marginBottom: 10 }}>90-Day Physical & Mental Transformation</div>
+            <p style={{ fontSize: 13, color: "#999", lineHeight: 1.9, margin: 0 }}>
+              Final semester. No gym. No equipment. No perfect starting point. Just Fajr at 4:45 AM, bodyweight training, homemade food, and the decision to become the person I've been putting off becoming. Built around 5 daily prayers, NSU schedule, and 90-minute ultradian cycles.
+            </p>
+          </Card>
+
+          {/* 3-month phases */}
+          {[
+            { n: "01", title: "Month 1", sub: "Foundation", c: "#c9a84c", items: ["Stay up after Fajr — the keystone habit", "Master form before chasing reps", "Cut sugared tea from 10 cups to 6", "Hit the plate method at lunch daily", "Drink 3L water daily"] },
+            { n: "02", title: "Month 2", sub: "Building", c: "#c9a84c", items: ["Increase reps/sets 20% from Month 1", "Add resistance: backpack, heavier bottles", "Reduce tea sugar to 0.5 tsp", "80% clean eating — shawarma, dal, chicken", "Weekly progress photos every Sunday"] },
+            { n: "03", title: "Month 3", sub: "Shredding", c: "#c9a84c", items: ["Push last set to failure every session", "90% clean eating — no negotiation", "Add 10–15 min cardio 3x/week", "Tea fully unsweetened by now", "3.5L water daily non-negotiable"] },
+          ].map(p => (
+            <div key={p.n} style={{ display: "flex", gap: 16, marginBottom: 14, alignItems: "flex-start" }}>
+              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 40, color: "#c9a84c", minWidth: 40, lineHeight: 1, marginTop: 4 }}>{p.n}</div>
+              <Card style={{ flex: 1, padding: "18px 20px" }}>
+                <div style={{ fontSize: 10, color: "#888", letterSpacing: 2, fontWeight: 600 }}>{p.sub.toUpperCase()}</div>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, fontWeight: 600, color: "#f0ece0", margin: "4px 0 12px" }}>{p.title}</div>
+                {p.items.map((item, j) => (
+                  <div key={j} style={{ display: "flex", gap: 8, fontSize: 12, color: "#999", marginBottom: 6, alignItems: "flex-start" }}>
+                    <span style={{ color: "#c9a84c", flexShrink: 0 }}>→</span>{item}
+                  </div>
+                ))}
+              </Card>
+            </div>
+          ))}
+
+          <Card style={{ background: "linear-gradient(135deg,#1a1508,#0e0c08)", border: "1px solid #c9a84c", textAlign: "center", padding: "28px" }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(22px,5vw,36px)", fontWeight: 600, color: "#f0ece0", lineHeight: 1.2, marginBottom: 12 }}>
+              90 days from now<br /><Gold>you won't recognise yourself.</Gold>
+            </div>
+            <div style={{ fontSize: 10, color: "#c9a84c", letterSpacing: 4, fontWeight: 600 }}>BISMILLAH. LET'S GO.</div>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── CONNECT ───────────────────────────────────────────────────────────────────
+function ConnectPage() {
+  return (
+    <div style={{ maxWidth: 860, margin: "0 auto", padding: "64px 32px" }}>
+      <div className="fade-up d1"><SLabel>Say Hello</SLabel><STitle>Connect</STitle></div>
+      <Card className="fade-up d2" style={{ background: "linear-gradient(135deg,#111008,#0e0c08)", border: "1px solid #c9a84c44", marginBottom: 28, textAlign: "center", padding: "32px 24px" }}>
+        <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 300, fontStyle: "italic", color: "#c8b898", marginBottom: 12 }}>
+          "Built from curiosity. Ruled by heart."
+        </div>
+        <p style={{ fontSize: 13, color: "#888", maxWidth: 460, margin: "0 auto", lineHeight: 1.9 }}>
+          Whether it's about my projects, networking, cybersecurity, a book recommendation, anime, or just wanting to talk — reach out. I reply.
+        </p>
+      </Card>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+        {CONNECT_LINKS.map((l, i) => (
+          <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer"
+            className={`fade-up card-hover d${Math.min(i + 3, 6)}`}
+            style={{ background: "#111008", border: `1px solid ${l.color}22`, borderRadius: 8, padding: "20px", textDecoration: "none", display: "block", borderTop: `2px solid ${l.color}` }}>
+            <div style={{ color: l.color, fontSize: 20, marginBottom: 8, fontWeight: 700 }}>{l.icon}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "#f0ece0", marginBottom: 3 }}>{l.label}</div>
+            <div style={{ fontSize: 11, color: "#666" }}>{l.desc}</div>
+          </a>
+        ))}
+      </div>
+      <div className="fade-up" style={{ marginTop: 48, textAlign: "center", fontSize: 10, color: "#333", letterSpacing: 3, fontWeight: 500 }}>
+        MOHAMMED BIN AHMED · DHAKA, BANGLADESH · BSCSE · NSU · 2026
+      </div>
+    </div>
+  );
+}
