@@ -25,6 +25,8 @@ const injectStyles = () => {
     @keyframes shimmer { 0% { background-position:-200% center; } 100% { background-position:200% center; } }
     @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
     @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+    @keyframes slideDown { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes slideUp { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-12px); } }
     .fade-up { animation: fadeUp 0.7s ease both; }
     .fade-in { animation: fadeIn 0.5s ease both; }
     .slide-in-right { animation: slideInRight 0.45s ease both; }
@@ -51,6 +53,9 @@ const injectStyles = () => {
     .tab-btn { background:none; border:none; cursor:pointer; font-family:'Outfit',sans-serif; font-weight:600; font-size:11px; letter-spacing:2px; padding:12px 20px; text-transform:uppercase; transition:color 0.2s; }
     .module-card { transition: border-color 0.2s, background 0.2s; }
     .module-card:hover { border-color:#c9a84c44 !important; }
+    .hamburger-btn { transition: transform 0.3s ease; }
+    .hamburger-btn:hover { transform: scale(1.1); }
+    .hamburger-line { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 
     /* ── Mobile ── */
     @media (max-width: 640px) {
@@ -58,6 +63,7 @@ const injectStyles = () => {
       .mobile-menu-btn { display:flex !important; }
       .mobile-nav { display:flex !important; }
       .hero-pad { padding:40px 20px !important; }
+      .hero-grid { grid-template-columns:1fr !important; gap:32px !important; }
       .two-col { grid-template-columns:1fr !important; }
       .three-col { grid-template-columns:1fr 1fr !important; }
       .four-col { grid-template-columns:1fr 1fr !important; }
@@ -67,6 +73,7 @@ const injectStyles = () => {
       .week-grid { grid-template-columns:repeat(4,1fr) !important; }
       .phase-btns { flex-direction:column !important; }
       .stats-row { flex-wrap:wrap !important; gap:16px !important; }
+      .hero-pfp { justify-content:center !important; order:-1 !important; }
     }
     @media (min-width: 641px) {
       .mobile-menu-btn { display:none !important; }
@@ -124,6 +131,7 @@ const LIFE_CARDS = [
   { icon:"◉", title:"Gaming", color:"#7a6ea8", items:[{l:"Strinova",s:"main — tactical shooter"},{l:"Genshin Impact",s:"open world RPG"}], note:"Gaming channel: Motria. Strinova hits deeper.", link:{label:"YOUTUBE →",href:"https://www.youtube.com/@motria0"} },
   { icon:"▦", title:"Reading", color:"#4a8fa8", items:[{l:"Crime and Punishment",s:"Dostoevsky — the one that hit different"},{l:"Always something next",s:"20 min before sleep, every night"}], note:"Reading is the last thing before sleep. Non-negotiable.", link:{label:"GOODREADS →",href:"https://www.goodreads.com/user/show/169165256-mohammed-bin-ahmed"} },
   { icon:"◎", title:"Anime", color:"#a86a4a", items:[{l:"MyAnimeList",s:"full list — 0Motria"},{l:"Obsessed with openings",s:"they hit differently than the show"}], note:"Ask me for a recommendation. I will not disappoint.", link:{label:"MYANIMELIST →",href:"https://myanimelist.net/profile/0Motria"} },
+  { icon:"⚽", title:"Sports", color:"#6aa86a", items:[{l:"Cricket",s:"All formats — test, ODI, T20"},{l:"Table Tennis",s:"Fast reflexes and spin"},{l:"Basketball",s:"Street-court drives"},{l:"Chess",s:"Tactical, positional, rapid"},{l:"Carrom",s:"Precision and timing"}], note:"Sports keep me sharp and competitive. Always ready for a match.", link:null },
   { icon:"⬡", title:"Photography", color:"#6aa86a", items:[{l:"motriasclicks.netlify.app",s:"live portfolio"},{l:"Street & candid",s:"the genre that feels most honest"}], note:"Seeing the world through a lens changes how you look at it without one.", link:{label:"VISIT GALLERY →",href:"https://motriasclicks.netlify.app"} },
   { icon:"◇", title:"Cooking", color:"#c9a84c", items:[{l:"Homemade Shawarma",s:"the signature"},{l:"Potato Curry",s:"the one I'm most proud of"},{l:"Chinese stir fry",s:"carrot, borboti, chicken"}], note:"Cooking is meditation. Music on, phone away.", link:null },
 ];
@@ -251,7 +259,13 @@ function DailyFactWidget() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const getTodayKey = () => new Date().toISOString().split("T")[0];
+  const getTodayKey = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
 
   const fetchFact = useCallback(async () => {
     const key = `mahee_fact_${getTodayKey()}`;
@@ -265,6 +279,8 @@ function DailyFactWidget() {
         headers:{"Content-Type":"application/json","Authorization":`Bearer ${apiKey}`,"HTTP-Referer":"https://mahee.netlify.app","X-Title":"Mahee Portfolio"},
         body:JSON.stringify({
           model:"anthropic/claude-sonnet-4-5",
+          temperature:0.7,
+          top_p:0.9,
           max_tokens:300,
           messages:[{role:"user",content:`Generate one genuinely fascinating, research-backed fact from any field of knowledge. It should be surprising, counterintuitive, or deeply interesting. Format as JSON with keys: "fact" (the fact itself, 2-3 sentences), "field" (one word like Physics/History/Biology/Psychology/etc), "source" (a real paper, journal, or institution that backs this). Return only valid JSON, no markdown.`}]
         })
@@ -424,7 +440,7 @@ export default function MaheePortfolio() {
         <button onClick={() => goTo("Home")} style={{background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"'Cormorant Garamond',serif",fontSize:20,fontWeight:700,letterSpacing:2,color:"#c9a84c"}}>M·A·H·E·E</button>
 
         {/* Desktop nav */}
-        <div className="desktop-nav" style={{display:"flex",gap:2}}>
+        <div className="desktop-nav" style={{display:"flex",gap:2,alignItems:"center"}}>
           {NAV.map(item => (
             <button key={item} onClick={() => goTo(item)} className={`nav-link ${nav===item?"active":""}`}
               style={{background:"none",border:"none",cursor:"pointer",fontSize:11,fontFamily:"'Outfit',sans-serif",fontWeight:500,letterSpacing:1.5,padding:"6px 10px",color:nav===item?"#c9a84c":"#888",transition:"color 0.2s"}}>
@@ -434,20 +450,20 @@ export default function MaheePortfolio() {
         </div>
 
         {/* Mobile hamburger */}
-        <button className="mobile-menu-btn" onClick={() => setMobileOpen(!mobileOpen)}
+        <button className="mobile-menu-btn hamburger-btn" onClick={() => setMobileOpen(!mobileOpen)}
           style={{background:"none",border:"none",cursor:"pointer",color:"#c9a84c",fontSize:20,padding:"4px 8px",display:"flex",flexDirection:"column",gap:4}}>
-          <div style={{width:20,height:2,background:mobileOpen?"#c9a84c":"#888",transition:"all 0.2s",transform:mobileOpen?"rotate(45deg) translate(4px,4px)":""}}/>
-          <div style={{width:20,height:2,background:"#888",transition:"all 0.2s",opacity:mobileOpen?0:1}}/>
-          <div style={{width:20,height:2,background:mobileOpen?"#c9a84c":"#888",transition:"all 0.2s",transform:mobileOpen?"rotate(-45deg) translate(4px,-4px)":""}}/>
+          <div className="hamburger-line" style={{width:20,height:2,background:mobileOpen?"#c9a84c":"#888",transform:mobileOpen?"rotate(45deg) translate(4px,4px)":""}}/>
+          <div className="hamburger-line" style={{width:20,height:2,background:"#888",opacity:mobileOpen?0:1}}/>
+          <div className="hamburger-line" style={{width:20,height:2,background:mobileOpen?"#c9a84c":"#888",transform:mobileOpen?"rotate(-45deg) translate(4px,-4px)":""}}/>
         </button>
       </nav>
 
       {/* Mobile nav drawer */}
       {mobileOpen && (
-        <div className="mobile-nav" style={{position:"fixed",top:56,left:0,right:0,background:"rgba(10,9,8,0.98)",borderBottom:"1px solid #c9a84c22",zIndex:99,flexDirection:"column",padding:"8px 0"}}>
-          {NAV.map(item => (
+        <div className="mobile-nav" style={{position:"fixed",top:56,left:0,right:0,background:"rgba(10,9,8,0.98)",borderBottom:"1px solid #c9a84c22",zIndex:99,flexDirection:"column",padding:"8px 0",animation:"slideDown 0.3s ease"}}>
+          {NAV.map((item,i) => (
             <button key={item} onClick={() => goTo(item)}
-              style={{background:"none",border:"none",cursor:"pointer",fontSize:13,fontFamily:"'Outfit',sans-serif",fontWeight:600,letterSpacing:2,padding:"14px 24px",color:nav===item?"#c9a84c":"#888",textAlign:"left",borderLeft:nav===item?"3px solid #c9a84c":"3px solid transparent"}}>
+              style={{background:"none",border:"none",cursor:"pointer",fontSize:13,fontFamily:"'Outfit',sans-serif",fontWeight:600,letterSpacing:2,padding:"14px 24px",color:nav===item?"#c9a84c":"#888",textAlign:"left",borderLeft:nav===item?"3px solid #c9a84c":"3px solid transparent",animation:`slideDown 0.3s ease ${i*0.05}s backwards`}}>
               {item.toUpperCase()}
             </button>
           ))}
@@ -463,31 +479,28 @@ export default function MaheePortfolio() {
 function HomePage({ setNav }) {
   return (
     <div className="hero-pad" style={{minHeight:"calc(100vh - 56px)",display:"flex",flexDirection:"column",justifyContent:"center",padding:"60px 40px",maxWidth:1000,margin:"0 auto"}}>
-      <div className="fade-in d1" style={{marginBottom:32}}>
-        <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <div style={{height:1,width:48,background:"#c9a84c44"}}/>
-          <span style={{fontSize:10,letterSpacing:4,color:"#c9a84c88",fontFamily:"'Outfit',sans-serif",fontWeight:600}}>DHAKA, BANGLADESH</span>
-        </div>
-      </div>
-      <div className="fade-up d1"><SLabel>Mohammed Bin Ahmed</SLabel></div>
-      <h1 className="fade-up d2 hero-title" style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(48px,10vw,100px)",fontWeight:300,letterSpacing:-1,lineHeight:0.95,margin:"12px 0 0",color:"#f0ece0"}}>
-        Built from<br /><Gold>curiosity.</Gold><br />
-        <span style={{fontStyle:"italic",color:"#c8b898"}}>Ruled by heart.</span>
-      </h1>
-      <p className="fade-up d3" style={{maxWidth:500,fontSize:15,color:"#888",lineHeight:1.9,margin:"32px 0 0",fontWeight:300}}>
-        Final year CSE at North South University. IoT & Cybersecurity. Builder of swarm robots, 5G security systems, and Linux login screens. Endlessly curious, annoyingly good at things he barely shows up for.
-      </p>
-      <div className="fade-up d4" style={{display:"flex",gap:16,marginTop:40,flexWrap:"wrap"}}>
-        <button onClick={() => setNav("Work")} style={{padding:"12px 28px",borderRadius:2,fontSize:12,fontWeight:600,letterSpacing:2,cursor:"pointer",fontFamily:"'Outfit',sans-serif",background:"#c9a84c",color:"#0a0908",border:"none"}}>View Work</button>
-        <a href="https://motriasclicks.netlify.app" target="_blank" rel="noopener noreferrer" style={{padding:"12px 28px",borderRadius:2,fontSize:12,fontWeight:600,letterSpacing:2,textDecoration:"none",border:"1px solid #c9a84c44",color:"#c9a84c",fontFamily:"'Outfit',sans-serif"}}>Photography →</a>
-      </div>
-      <div className="fade-up d5" style={{display:"flex",gap:12,marginTop:48,flexWrap:"wrap"}}>
-        {[{dot:"#6aa86a",text:"Final Semester — NSU BSCSE Summer 2026"},{dot:"#c9a84c",text:"90-Day Transformation — Active"},{dot:"#7a6ea8",text:"2 Projects Ongoing"}].map(b => (
-          <div key={b.text} style={{display:"flex",alignItems:"center",gap:8,fontSize:11,color:"#666",fontWeight:500}}>
-            <div style={{width:6,height:6,borderRadius:"50%",background:b.dot,animation:"pulse 2s ease-in-out infinite"}}/>
-            {b.text}
+      <div className="fade-up d2 hero-grid" style={{display:"grid",gridTemplateColumns:"minmax(0,1.4fr) 360px",gap:40,alignItems:"start",marginTop:32}}>
+        <div>
+          <div><SLabel>Mohammed Bin Ahmed</SLabel></div>
+          <h1 className="hero-title" style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(48px,10vw,100px)",fontWeight:300,letterSpacing:-1,lineHeight:0.95,margin:"12px 0 0",color:"#f0ece0"}}>
+            Built from<br /><Gold>curiosity.</Gold><br />
+            <span style={{fontStyle:"italic",color:"#c8b898"}}>Ruled by heart.</span>
+          </h1>
+          <p style={{maxWidth:520,fontSize:15,color:"#888",lineHeight:1.9,margin:"28px 0 0",fontWeight:300}}>
+            Final year CSE at North South University. IoT & Cybersecurity. Builder of swarm robots, 5G security systems, and Linux login screens. Endlessly curious, annoyingly good at things he barely shows up for.
+          </p>
+          <div style={{display:"flex",gap:16,marginTop:32,flexWrap:"wrap"}}>
+            <button onClick={() => setNav("Work")} style={{padding:"12px 28px",borderRadius:2,fontSize:12,fontWeight:600,letterSpacing:2,cursor:"pointer",fontFamily:"'Outfit',sans-serif",background:"#c9a84c",color:"#0a0908",border:"none"}}>View Work</button>
+            <a href="https://motriasclicks.netlify.app" target="_blank" rel="noopener noreferrer" style={{padding:"12px 28px",borderRadius:2,fontSize:12,fontWeight:600,letterSpacing:2,textDecoration:"none",border:"1px solid #c9a84c44",color:"#c9a84c",fontFamily:"'Outfit',sans-serif"}}>Photography →</a>
           </div>
-        ))}
+        </div>
+        <div className="hero-pfp" style={{display:"flex",justifyContent:"flex-end",width:"100%"}}>
+          <div style={{position:"relative",width:"clamp(260px, 40vw, 340px)",height:"clamp(260px, 40vw, 340px)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <div style={{position:"relative",width:"100%",height:"100%",borderRadius:999,overflow:"hidden",background:"#111008",border:"3px solid #c9a84c",display:"flex",alignItems:"center",justifyContent:"center",filter:"brightness(1.08)",boxShadow:"0 0 0 1px rgba(201,168,76,0.12)"}}>
+              <img src="/profile.png" alt="Profile picture" style={{width:"100%",height:"100%",objectFit:"cover",filter:"brightness(1.08)"}} />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
