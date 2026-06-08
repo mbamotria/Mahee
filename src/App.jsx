@@ -20,11 +20,15 @@ const injectStyles = () => {
     *, *::before, *::after { box-sizing: border-box; }
     @keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
     @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+    @keyframes slideInRight { from { opacity:0; transform:translateX(24px); } to { opacity:1; transform:translateX(0); } }
+    @keyframes slideInLeft { from { opacity:0; transform:translateX(-24px); } to { opacity:1; transform:translateX(0); } }
     @keyframes shimmer { 0% { background-position:-200% center; } 100% { background-position:200% center; } }
     @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
     @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
     .fade-up { animation: fadeUp 0.7s ease both; }
     .fade-in { animation: fadeIn 0.5s ease both; }
+    .slide-in-right { animation: slideInRight 0.45s ease both; }
+    .slide-in-left { animation: slideInLeft 0.45s ease both; }
     .d1{animation-delay:0.1s} .d2{animation-delay:0.25s} .d3{animation-delay:0.4s}
     .d4{animation-delay:0.55s} .d5{animation-delay:0.7s} .d6{animation-delay:0.85s}
     .gold-shimmer {
@@ -207,7 +211,16 @@ const SYLLABUS_PHASES = [
     ]
   }
 ];
-
+const TEACH_COURSES = [
+  {
+    id: "zero-to-hacker",
+    title: "Zero to Hacker",
+    subtitle: "Networking → Cybersecurity · Full course content",
+    description: "Click to open the full course content currently displayed in the syllabus section. This is a course page, not a syllabus page.",
+    color: "#00d4ff",
+    highlights: ["Networking fundamentals", "Wireshark & tcpdump", "Active reconnaissance", "Privilege escalation", "Blue team hardening"],
+  },
+];
 // ── HELPERS ────────────────────────────────────────────────────────────────
 const Gold = ({ children }) => <span className="gold-shimmer">{children}</span>;
 
@@ -387,7 +400,7 @@ export default function MaheePortfolio() {
   const [expandedProject, setExpandedProject] = useState(null);
   const [expandedPaper, setExpandedPaper] = useState(null);
   const [journeyTab, setJourneyTab] = useState("academics");
-  const [teachTab, setTeachTab] = useState("syllabus");
+  const [teachTab, setTeachTab] = useState("courses");
   const [activePhase, setActivePhase] = useState(0);
 
   const goTo = (page) => { setNav(page); setMobileOpen(false); window.scrollTo(0,0); };
@@ -675,15 +688,18 @@ function LifePage() {
 
 // ── TEACH ──────────────────────────────────────────────────────────────────
 function TeachPage({teachTab,setTeachTab,activePhase,setActivePhase}) {
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [transitionKey, setTransitionKey] = useState("courses-list");
   const phase = SYLLABUS_PHASES[activePhase];
   const total = SYLLABUS_PHASES.reduce((s,p) => s+p.modules.length,0);
+  const course = TEACH_COURSES.find(c => c.id === selectedCourse);
 
   return (
     <div className="page-pad" style={{maxWidth:860,margin:"0 auto",padding:"64px 32px"}}>
       <div className="fade-up d1"><SLabel>Knowledge</SLabel><STitle>Teach</STitle></div>
 
       <div style={{display:"flex",gap:0,marginBottom:32,borderBottom:"1px solid #1e1c14",overflowX:"auto"}}>
-        {["syllabus","daily fact"].map(tab => (
+        {["courses","daily fact"].map(tab => (
           <button key={tab} className="tab-btn" onClick={() => setTeachTab(tab)}
             style={{color:teachTab===tab?"#c9a84c":"#555",borderBottom:teachTab===tab?"2px solid #c9a84c":"2px solid transparent",whiteSpace:"nowrap"}}>
             {tab.toUpperCase()}
@@ -700,46 +716,69 @@ function TeachPage({teachTab,setTeachTab,activePhase,setActivePhase}) {
         </div>
       )}
 
-      {teachTab==="syllabus" && (
-        <div className="fade-in">
-          {/* Header stats */}
-          <Card style={{background:"linear-gradient(135deg,#1a1508,#0e0c08)",border:"1px solid #c9a84c44",marginBottom:24}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontWeight:600,fontSize:"clamp(20px,4vw,32px)",color:"#f0ece0",marginBottom:4}}>Zero to Hacker</div>
-            <div style={{fontSize:12,color:"#888",marginBottom:20}}>Networking → Cybersecurity · Complete Professional Syllabus</div>
-            <div className="stats-row" style={{display:"flex",gap:24,flexWrap:"wrap"}}>
-              {[{l:"Total Modules",v:String(total)},{l:"Phase 1",v:"20 modules · 3 mo"},{l:"Phase 2",v:"19 modules · 3 mo"},{l:"Weekly Pace",v:"3–5 hrs"},{l:"Cert Targets",v:"Net+, Sec+, CEH, OSCP"}].map(s => (
-                <div key={s.l}>
-                  <div style={{fontSize:10,color:"#666",letterSpacing:2,textTransform:"uppercase"}}>{s.l}</div>
-                  <div style={{fontSize:13,color:"#c9a84c",fontWeight:700,marginTop:3}}>{s.v}</div>
-                </div>
-              ))}
-            </div>
-          </Card>
+      {teachTab==="courses" && (
+        <div className={`fade-in ${selectedCourse?"slide-in-left":"slide-in-right"}`} key={transitionKey}>
+          {!selectedCourse && (
+            <>
+              <p style={{fontSize:13,color:"#888",lineHeight:1.8,marginBottom:24,borderLeft:"2px solid #c9a84c44",paddingLeft:16}}>
+                This page shows the teaching courses. Click a course card to open the full course content currently represented by the syllabus.
+              </p>
+              <div className="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+                {TEACH_COURSES.map((c,i) => (
+                  <div key={c.id} className={`fade-up slide-in-right card-hover d${Math.min(i+2,6)}`} style={{background:"#111008",border:`1px solid ${c.color}22`,borderRadius:8,padding:"24px",borderTop:`3px solid ${c.color}`,cursor:"pointer"}} onClick={() => { setSelectedCourse(c.id); setTransitionKey(`course-${c.id}`); }}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap",marginBottom:14}}>
+                      <div style={{minWidth:0,flex:1}}>
+                        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,fontWeight:600,color:"#f0ece0",marginBottom:6}}>{c.title}</div>
+                        <div style={{fontSize:12,color:"#666"}}>{c.subtitle}</div>
+                      </div>
+                    </div>
+                    <p style={{fontSize:13,color:"#999",lineHeight:1.8,margin:"0 0 18px"}}>{c.description}</p>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                      {c.highlights.map(item => <span key={item} className="tag" style={{background:"#1e1c14",color:"#aaa",border:"1px solid #333"}}>{item}</span>)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
-          {/* Phase selector */}
-          <div className="phase-btns" style={{display:"flex",gap:10,marginBottom:24,flexWrap:"wrap"}}>
-            {SYLLABUS_PHASES.map((p,i) => (
-              <button key={p.id} onClick={() => setActivePhase(i)}
-                style={{background:activePhase===i?p.color:"transparent",color:activePhase===i?"#000":p.color,border:`1px solid ${p.color}`,padding:"8px 20px",borderRadius:4,fontFamily:"'Outfit',sans-serif",fontSize:11,fontWeight:700,letterSpacing:1,cursor:"pointer",transition:"all 0.15s",flex:"1 1 auto"}}>
-                {p.label}: {p.title}
+          {selectedCourse && course && (
+            <>
+              <button onClick={() => { setSelectedCourse(null); setTransitionKey("courses-list"); }}
+                style={{marginBottom:24,padding:"10px 18px",borderRadius:4,border:"1px solid #c9a84c22",background:"transparent",color:"#c9a84c",cursor:"pointer",fontFamily:"'Outfit',sans-serif",fontWeight:700,letterSpacing:1}}>
+                ← Back to courses
               </button>
-            ))}
-          </div>
-
-          {/* Phase title */}
-          <div style={{marginBottom:20}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontWeight:600,fontSize:24,color:phase.color}}>{phase.title}</div>
-            <div style={{fontSize:11,color:"#666",marginTop:4}}>{phase.duration}</div>
-          </div>
-
-          {/* Module list */}
-          {phase.modules.map(m => <ModuleCard key={m.id} module={m} phaseColor={phase.color} />)}
-
-          {/* Legend */}
-          <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:20,paddingTop:20,borderTop:"1px solid #1e1c14"}}>
-            <GoldTag color="#ff9900">⚡ Bridge to cybersecurity</GoldTag>
-            <GoldTag color="#a855f7">🎓 Cert alignment</GoldTag>
-          </div>
+              <Card style={{background:"linear-gradient(135deg,#1a1508,#0e0c08)",border:"1px solid #c9a84c44",marginBottom:24}}>
+                <div style={{fontFamily:"'Cormorant Garamond',serif",fontWeight:600,fontSize:"clamp(20px,4vw,32px)",color:"#f0ece0",marginBottom:4}}>{course.title}</div>
+                <div style={{fontSize:12,color:"#888",marginBottom:20}}>{course.subtitle}</div>
+                <div className="stats-row" style={{display:"flex",gap:24,flexWrap:"wrap"}}>
+                  {[{l:"Total Modules",v:String(total)},{l:"Phase 1",v:"20 modules · 3 mo"},{l:"Phase 2",v:"19 modules · 3 mo"},{l:"Weekly Pace",v:"3–5 hrs"},{l:"Cert Targets",v:"Net+, Sec+, CEH, OSCP"}].map(s => (
+                    <div key={s.l}>
+                      <div style={{fontSize:10,color:"#666",letterSpacing:2,textTransform:"uppercase"}}>{s.l}</div>
+                      <div style={{fontSize:13,color:"#c9a84c",fontWeight:700,marginTop:3}}>{s.v}</div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+              <div className="phase-btns" style={{display:"flex",gap:10,marginBottom:24,flexWrap:"wrap"}}>
+                {SYLLABUS_PHASES.map((p,i) => (
+                  <button key={p.id} onClick={() => setActivePhase(i)}
+                    style={{background:activePhase===i?p.color:"transparent",color:activePhase===i?"#000":p.color,border:`1px solid ${p.color}`,padding:"8px 20px",borderRadius:4,fontFamily:"'Outfit',sans-serif",fontSize:11,fontWeight:700,letterSpacing:1,cursor:"pointer",transition:"all 0.15s",flex:"1 1 auto"}}>
+                    {p.label}: {p.title}
+                  </button>
+                ))}
+              </div>
+              <div style={{marginBottom:20}}>
+                <div style={{fontFamily:"'Cormorant Garamond',serif",fontWeight:600,fontSize:24,color:phase.color}}>{phase.title}</div>
+                <div style={{fontSize:11,color:"#666",marginTop:4}}>{phase.duration}</div>
+              </div>
+              {phase.modules.map(m => <ModuleCard key={m.id} module={m} phaseColor={phase.color} />)}
+              <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:20,paddingTop:20,borderTop:"1px solid #1e1c14"}}>
+                <GoldTag color="#ff9900">⚡ Bridge to cybersecurity</GoldTag>
+                <GoldTag color="#a855f7">🎓 Cert alignment</GoldTag>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
