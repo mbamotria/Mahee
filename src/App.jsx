@@ -496,7 +496,7 @@ function HomePage({ setNav }) {
         </div>
         <div className="hero-pfp" style={{display:"flex",justifyContent:"flex-end",width:"100%"}}>
           <div style={{position:"relative",width:"clamp(260px, 40vw, 340px)",height:"clamp(260px, 40vw, 340px)",display:"flex",alignItems:"center",justifyContent:"center"}}>
-            <div style={{position:"relative",width:"100%",height:"100%",borderRadius:999,overflow:"hidden",background:"#111008",border:"3px solid #c9a84c",display:"flex",alignItems:"center",justifyContent:"center",filter:"brightness(0.8)",boxShadow:"0 0 0 1px rgba(201,168,76,0.12)"}}>
+            <div style={{position:"relative",width:"100%",height:"100%",borderRadius:999,overflow:"hidden",background:"#111008",border:"3px solid #c9a84c",display:"flex",alignItems:"center",justifyContent:"center",filter:"brightness(0.85)",boxShadow:"0 0 0 1px rgba(201,168,76,0.12)"}}>
               <img src="/profile.png" alt="Profile picture" style={{width:"100%",height:"100%",objectFit:"cover",filter:"brightness(1.08)"}} />
             </div>
           </div>
